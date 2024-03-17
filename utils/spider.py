@@ -1,21 +1,13 @@
-import re
 import os
 import os.path as osp
 import sys
 import json
 import time
-import argparse
 import datetime
-from selenium import webdriver
 from bs4 import BeautifulSoup
-from urllib import parse as url_parse
 import random
 from selenium import webdriver
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from .tools import mkdir_if_missing, write_json, read_json
+from utils.tools import mkdir_if_missing, write_json, read_json
 from datetime import timedelta
 class spider():
 
@@ -26,9 +18,6 @@ class spider():
         self.save_dir_json = save_dir_json
         self.save_by_page = save_by_page
         options = webdriver.EdgeOptions()
-        # 设置 Edge 驱动程序路径
-        options.binary_location = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-        # 设置 Edge 驱动程序路径
         options.add_argument('--headless')
         self.browser = webdriver.Edge(options=options)
         print('spider init done.')
@@ -393,26 +382,18 @@ class spider():
         self.browser.get(page_url)
         time.sleep(self.t + 2 * random.random())
         html = BeautifulSoup(self.browser.page_source, features="html.parser")
-        print(html)
         page_number = html.find('span', attrs={'class': 'be-pager-total'}).text
         user_name = html.find('span', id='h-name').text
-
         print(page_number)
-
         return int(page_number.split(' ')[1]), user_name
 
     def get_videos_by_page(self, idx):
         # 获取第 page_idx 页的视频信息
         urls_page, titles_page, plays_page, dates_page, durations_page,bvs_page = [], [], [], [], [],[]
         page_url = self.user_url + '/video?tid=0&pn={}&keyword=&order=pubdate'.format(idx + 1)
-
-
         self.browser.get(page_url)
         time.sleep(self.t + 2 * random.random())
-
-
         html = BeautifulSoup(self.browser.page_source, features="html.parser")
-
         ul_data = html.find('div', id='submit-video-list').find('ul', attrs={'class': 'clearfix cube-list'})
 
         for li in ul_data.find_all('li'):
@@ -460,6 +441,7 @@ class spider():
         dir_name = osp.dirname(json_path)
         mkdir_if_missing(dir_name)
         write_json(data_list, json_path)
+        print(data_list)
         print('dump json file done. total {} urls. \n'.format(len(urls)))
 
     def get(self):

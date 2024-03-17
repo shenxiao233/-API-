@@ -1,5 +1,4 @@
 import argparse
-
 from flask import Flask, jsonify, request
 from utils.start import main
 
