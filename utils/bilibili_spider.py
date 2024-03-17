@@ -10,21 +10,29 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 from urllib import parse as url_parse
 import random
+from selenium import webdriver
+from selenium.webdriver.edge.service import Service
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
+from selenium.webdriver.support.wait import WebDriverWait
 
 from .tools import mkdir_if_missing, write_json, read_json
 
 
 class Bilibili_Spider():
 
-    def __init__(self, uid, save_dir_json='json', save_by_page=False, t=2):
+    def __init__(self, uid, save_dir_json='json', save_by_page=False, t=5):
         self.t = t
         self.uid = uid
         self.user_url = 'https://space.bilibili.com/{}'.format(uid)
         self.save_dir_json = save_dir_json
         self.save_by_page = save_by_page
-        options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
-        self.browser = webdriver.Firefox(options=options)
+        options = webdriver.EdgeOptions()
+        # 设置 Edge 驱动程序路径
+        options.binary_location = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+        # 设置 Edge 驱动程序路径
+        self.browser = webdriver.Edge(options=options)
         print('spider init done.')
 
     def close(self):
@@ -50,11 +58,11 @@ class Bilibili_Spider():
     def get_page_num(self):
         page_url = self.user_url + '/video?tid=0&page={}&keyword=&order=pubdate'.format(1)
         self.browser.get(page_url)
-        time.sleep(self.t+2*random.random())
+        time.sleep(self.t + 2 * random.random())
         html = BeautifulSoup(self.browser.page_source, features="html.parser")
-
-        page_number = html.find('span', attrs={'class':'be-pager-total'}).text
-        user_name = html.find('span', id = 'h-name').text
+        print(html)
+        page_number = html.find('span', attrs={'class': 'be-pager-total'}).text
+        user_name = html.find('span', id='h-name').text
 
         return int(page_number.split(' ')[1]), user_name
 
@@ -77,7 +85,12 @@ class Bilibili_Spider():
             date_str = li.find('span', attrs = {'class':'time'}).text.strip()
             pub_date = self.date_convert(date_str)
             now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            play = int(li.find('span', attrs = {'class':'play'}).text.strip())
+            play_text = li.find('span', attrs={'class': 'play'}).text.strip()
+            if '万' in play_text:
+                play_text = play_text.replace('万', '')  # 去除 '万'
+                play = int(float(play_text) * 10000)  # 将数字转换为整数，并乘以 10000
+            else:
+                play = int(play_text)  # 没有单位时直接转换为整数
             # duration
             time_str = li.find('span', attrs = {'class':'length'}).text
             duration = self.time_convert(time_str)
@@ -87,6 +100,7 @@ class Bilibili_Spider():
             dates_page.append((pub_date, now))
             plays_page.append(play)
             durations_page.append(duration)
+
 
         return urls_page, titles_page, plays_page, dates_page, durations_page
 
